@@ -14,12 +14,11 @@ from datetime import datetime, timezone
 from pathlib import Path
 
 import pandas as pd
-import requests
 
+from predmkt.kalshi import KalshiClient
 from predmkt.polymarket import PolymarketClient
 
 DATA_DIR = Path(__file__).resolve().parents[1] / "data" / "observations"
-KALSHI_BASE = "https://api.elections.kalshi.com/trade-api/v2"
 
 
 SCHEMA = [
@@ -58,24 +57,10 @@ def snapshot_kalshi(
     now = int(_time.time())
     end = now + horizon_days * 24 * 3600
 
-    out: list[dict] = []
-    cursor = ""
-    pages = 0
-    while pages < 15:
-        params = {
-            "status": "open", "limit": 1000,
-            "min_close_ts": now, "max_close_ts": end,
-        }
-        if cursor:
-            params["cursor"] = cursor
-        r = requests.get(f"{KALSHI_BASE}/markets", params=params, timeout=30)
-        r.raise_for_status()
-        d = r.json()
-        out.extend(d.get("markets", []))
-        cursor = d.get("cursor") or ""
-        pages += 1
-        if not cursor:
-            break
+    client = KalshiClient()
+    out = list(client.markets(
+        status="open", min_close_ts=now, max_close_ts=end, limit=1000, max_pages=15,
+    ))
 
     ts = _now_utc().isoformat(timespec="seconds")
     rows = []

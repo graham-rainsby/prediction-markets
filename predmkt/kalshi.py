@@ -79,6 +79,37 @@ class KalshiClient:
             if not cursor:
                 return
 
+    def markets(
+        self,
+        status: str = "open",
+        min_close_ts: int | None = None,
+        max_close_ts: int | None = None,
+        series_ticker: str | None = None,
+        event_ticker: str | None = None,
+        limit: int = 1000,
+        max_pages: int = 15,
+    ) -> Iterator[dict]:
+        """Live (non-historical) market listings, throttled and retried."""
+        cursor = ""
+        for _ in range(max_pages):
+            params: dict = {"status": status, "limit": limit}
+            if min_close_ts is not None:
+                params["min_close_ts"] = min_close_ts
+            if max_close_ts is not None:
+                params["max_close_ts"] = max_close_ts
+            if series_ticker:
+                params["series_ticker"] = series_ticker
+            if event_ticker:
+                params["event_ticker"] = event_ticker
+            if cursor:
+                params["cursor"] = cursor
+            data = self._get("/markets", params=params)
+            for m in data.get("markets", []):
+                yield m
+            cursor = data.get("cursor") or ""
+            if not cursor:
+                return
+
     def historical_market(self, ticker: str) -> dict:
         data = self._get(f"/historical/markets/{ticker}")
         return data.get("market", data)
