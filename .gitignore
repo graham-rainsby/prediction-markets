@@ -1,0 +1,23 @@
+__pycache__/
+*.py[cod]
+*$py.class
+*.egg-info/
+.venv/
+venv/
+.env
+.ipynb_checkpoints/
+
+# Ignore data/ contents by default (FRED cache, MPT xlsx, v0 backtest parquets)
+data/*
+# but track hourly observation snapshots
+!data/observations/
+data/observations/*
+!data/observations/*.parquet
+
+*.feather
+*.duckdb
+*.sqlite
+
+.DS_Store
+.idea/
+.vscode/

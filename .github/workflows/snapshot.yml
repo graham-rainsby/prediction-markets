@@ -1,0 +1,53 @@
+name: Hourly market snapshot
+
+on:
+  schedule:
+    # 5 minutes past each hour — GitHub's scheduler queue is busiest at :00
+    - cron: '5 * * * *'
+  workflow_dispatch:  # allow manual triggering from the Actions tab
+
+permissions:
+  contents: write
+
+concurrency:
+  group: snapshot
+  cancel-in-progress: false
+
+jobs:
+  snapshot:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+
+    steps:
+      - name: Checkout repo
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 1
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+          cache: pip
+
+      - name: Install dependencies
+        run: pip install -e .
+
+      - name: Run market snapshot
+        run: python3 scripts/snapshot_markets.py
+
+      - name: Commit and push observation parquet
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+
+          # In case main moved during this run (rare with concurrency:1, but defensive)
+          git pull --rebase --autostash origin main || true
+
+          git add data/observations/
+          if git diff --staged --quiet; then
+            echo "no observation changes to commit"
+            exit 0
+          fi
+          git commit -m "snapshot: $(date -u +'%Y-%m-%dT%H:%M:%SZ')"
+          git push

@@ -1,0 +1,15 @@
+[project]
+name = "predmkt"
+version = "0.0.1"
+description = "Prediction-market backtest pipeline using liquid-market signals"
+requires-python = ">=3.11"
+dependencies = [
+    "requests>=2.31",
+    "pandas>=2.2",
+    "python-dateutil>=2.9",
+    "pyarrow>=15.0",
+]
+
+[tool.setuptools.packages.find]
+where = ["."]
+include = ["predmkt*"]
