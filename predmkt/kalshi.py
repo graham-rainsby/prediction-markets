@@ -114,6 +114,23 @@ class KalshiClient:
         data = self._get(f"/historical/markets/{ticker}")
         return data.get("market", data)
 
+    def market(self, ticker: str) -> dict | None:
+        """Live single-market lookup. Returns None on 404."""
+        self._throttle.wait()
+        url = f"{self.base}/markets/{ticker}"
+        for attempt in range(5):
+            r = self._s.get(url, timeout=self.timeout)
+            if r.status_code == 404:
+                return None
+            if r.status_code == 429 or 500 <= r.status_code < 600:
+                time.sleep(0.5 * (2**attempt))
+                continue
+            r.raise_for_status()
+            data = r.json()
+            return data.get("market", data)
+        r.raise_for_status()
+        return None
+
     def historical_candlesticks(
         self,
         ticker: str,
